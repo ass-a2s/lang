@@ -26,34 +26,23 @@
     --------------------------------------------------------------------------------------
 
     package : translate
-    function: collect controller translatable text
+    function: collect acl translatable text
 """
 __author__ = 'Ad Schellevis'
 
-def recursiveParseForm(xmlNode):
-    for childNode in xmlNode:
-        for tag in recursiveParseForm(childNode):
-            yield tag
-
-    if xmlNode.tag in ['help', 'label', 'hint']:
-        yield xmlNode.text
-
-    if xmlNode.tag in ['tab', 'subtab']:
-        yield xmlNode.attrib['description']
-
 def getTranslations(root):
-    import os
     import xml.etree.ElementTree as ET
+    import os.path
 
-    rootpath='%s/opnsense/mvc/app/controllers/'%root
-
-
-    for rootdir, dirs, files in os.walk(rootpath, topdown=False):
-        for name in files:
-            if name.lower()[-4:] == '.xml':
-                filename = '%s/%s'%(rootdir,name)
-                tree = ET.parse(filename)
-                rootObj = tree.getroot()
-                if rootObj.tag == 'form':
-                    for tag in recursiveParseForm(rootObj):
-                        yield tag
+    configpath = root + "/etc/config.xml.sample"
+    if not os.path.isfile(configpath):
+        return
+    tree = ET.parse(configpath)
+    rootObj = tree.getroot()
+    if rootObj.tag == 'opnsense':
+        for childNode in rootObj:
+            if childNode.tag == 'sysctl':
+                for item in childNode:
+                    for itemTags in item:
+                        if itemTags.tag == "descr":
+                            yield itemTags.text
